@@ -1,0 +1,480 @@
+<!-- /sections/blog-template.liquid -->
+
+
+
+{%- assign columns = section.settings.post_columns | plus: 0 -%}
+
+{%- if columns == 1 -%}
+	{%- assign width = 'grid__item' -%}
+	{%- assign paginator = 5 -%}
+{%- elsif columns == 2 -%}
+	{%- assign width = 'grid__item large--one-half medium-down--one-whole' -%}
+	{%- assign paginator = 10 -%}
+{%- elsif columns == 3 -%}
+	{%- assign width = 'grid__item large--one-third medium-down--one-whole' -%}
+	{%- assign paginator = 9 -%}
+{%- else -%}
+	{%- assign width = 'grid__item large--one-quarter medium-down--one-whole' -%}
+	{%- assign paginator = 15 -%}
+{%- endif -%}
+
+<style>.article-preview-image { padding-top: {{ section.settings.image_aspect_ratio | times: 100 | append: '%' }}; }</style>
+<section data-section-type="blog-posts" data-section-id="{{ section.id }}">
+
+    <div class="main_blog_wrapper">
+      <div class="banner_section_cstm">
+        <div class="bnr_cstm">
+          <div class="main_heading_cstm">
+              <h1 class="cstm_heading text-center">{{ section.settings.blog_title }}</h1>
+              {% if section.settings.blog_detail != blank %}
+                <p class="cstm_detail">{{ section.settings.blog_detail }}</p>
+              {% endif %}
+          </div>
+          <div class="cstm_bnr_icons">
+            <div class="cstm_icons">
+              {% for block in section.blocks %}
+                {% if block.type == "icons" %}
+                  <div class="icon_list">
+                    <a href="{{ block.settings.icon_url }}">
+                      <div class="icon_cs">
+                        <img src="{{ block.settings.icon_img | img_url:"132x"}}" class="ic_img">
+                      </div>
+                      <h2 class="ic_text">{{ block.settings.icon_txt }}</h2>
+                    </a>
+                  </div>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="blog_inner">
+		<div class="wrapper wrapper--{% if columns == 1 %}small{% else %}medium{% endif %}">
+			<div class="grid">
+
+             {% assign all_posts = "" %} 
+            {% for link in linklists.all-blogs-posts.links %}
+              {% assign blog = link.object %}
+              {%- paginate blog.articles by 35 -%}
+              {%- for article in blog.articles -%}
+<!--                 { % capture posts %} -->
+					<div class="grid__item {{ width }} blog-child" blog="{{ blog.title }}">
+						{%- if article.image -%}
+						<a href="{{ article.url }}" class="blog-child__image-link">
+							<div
+								class="article-preview-image lazyload"
+								data-bgset="{% render 'bgset', image: article.image %}" 
+								data-sizes="auto"
+								data-parent-fit="cover"
+							></div>
+							<noscript>
+								<div class="article-preview-image" style="background-image:url('{{ article.image | img_url:'2048x' }};')"></div>
+							</noscript>
+						</a>
+						{%- endif -%}
+						<h3><a href="{{ article.url }}">{{ article.title }}</a></h3>
+						{%- capture author -%}{{ article.author }}{%- endcapture -%}
+						{%- capture date -%}<time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | date: format: 'month_day_year' }}</time>{%- endcapture -%}
+						<a href="{{ article.url }}">
+							<div class="rte">
+								<p class="excerpt">{{ article.excerpt_or_content | strip_html | truncatewords: 35 }}</p>
+							</div>
+						</a>
+                      {% assign words = article.content | number_of_words %}
+                      <small class="light-gray">{{ date }}, {{ article.content | strip_html | split: ' ' | size | times: 1.0 | divided_by: 250 | round}} mins read</small>
+					</div>
+<!--                 { % endcapture %} -->
+<!--                 { % assign all_posts = all_posts | append:posts | append:"," %} -->
+				{%- endfor -%}
+                {%- if paginate.pages > 1 -%}
+                    <div class="grid__item">
+                        <hr>
+                        <div class="pagination">
+                            {{ paginate | default_pagination | replace: '&laquo; Previous', '<img src="https://cdn.shopify.com/s/files/1/1909/0145/files/Vector.svg?v=1672222569">' | replace: 'Next &raquo;', '<img src="https://cdn.shopify.com/s/files/1/1909/0145/files/Vector.svg?v=1672222569">' }}
+                        </div>     
+                    </div>     
+                {%- endif -%}
+              {%- endpaginate -%}
+              {%- endfor -%}
+
+{% comment %}           
+{% assign totalPosts = all_posts | split:"," %} 
+{% if totalPosts.size > 0 %}
+{% paginate totalPosts by 10 %}
+  {% for post in totalPosts %}
+      {{ post }}
+  {% endfor %}
+{%- if paginate.pages > 1 -%}
+      <div class="grid__item">
+          <hr>
+          <div class="pagination">
+              {{ paginate | default_pagination | replace: '&laquo; Previous', '<img src="https://cdn.shopify.com/s/files/1/1909/0145/files/Vector.svg?v=1672222569">' | replace: 'Next &raquo;', '<img src="https://cdn.shopify.com/s/files/1/1909/0145/files/Vector.svg?v=1672222569">' }}
+          </div>
+      </div>
+  {%- endif -%}
+{%- endpaginate -%}
+{% endif %}
+{% endcomment %}  	
+              
+			</div>
+		</div>
+        <div class="wrapper wrapper--small">
+			<div class="grid--full">
+				<div class="grid__item">
+					<h1 class="section-title text-left cstm_all_tags">All Tags</h1>
+			 	</div>
+				<div class="grid__item blog-tag-wrapper" tg="{{ blog.all_tags }}">
+					{% comment %}
+						Blog tags
+					{% endcomment %}
+     
+                <ul class="blog-tags-list inline-list text-left">
+                  {% assign arrTags = "" %}
+                  {% for link in linklists.all-blogs-posts.links %}
+                    {% assign blog = link.object %}
+					{%- if blog.all_tags.size > 0 -%}
+						{%- for tag in blog.all_tags -%}
+                            {% assign arrTags = arrTags | append:tag | append:"," %}
+						{%- endfor -%}
+					{%- endif -%}
+                  {% endfor %}
+                  
+                  {% assign tgArr = arrTags | split:"," | uniq%}
+                  {% for tg in tgArr %}
+                    {%- if current_tags contains tg -%}
+                        <li class="blog-tag"><span>{{ tg }}</span></li>
+                    {%- else -%}
+                        <li class="blog-tag">{{ tg | link_to_tag: tg }}</li>
+                    {%- endif -%}
+                  {% endfor %}
+                </ul>
+				</div>
+              <input type="hidden" vl="{{ arrTags }}" />
+			</div>
+		</div>
+
+        
+        
+      </div>
+    </div>
+
+<div data-label="Row" class="gf_row gf_row-fluid gf_row-no-padding" id="r-1640785597806" data-icon="gpicon-row" data-id="1640785597806" data-extraclass="">
+ <div class="gf_column gf_col-lg-12" id="c-1603861285630" data-id="1603861285630">
+  <div data-label="Row" id="r-1640785597799" class="gf_row gf_equal-height" data-icon="gpicon-row" data-id="1640785597799" data-extraclass="" style="visibility: visible;">
+   <div class="gf_column gf_col-lg-6 gf_col-md-6 gf_col-xs-12 gf_col-sm-12 gf_vertical-middle" id="c-1604696873774" data-id="1604696873774" style="min-height: 78px;">
+    <div data-label="Heading" id="e-1640785597737" class="element-wrap" data-icon="gpicon-heading" data-ver="1" data-id="1640785597737">
+     <div class="elm text-edit gf-elm-center gf-elm-right-md gf-elm-center-sm gf-elm-right-lg gf-elm-center-xs" data-gemlang="en" data-exc="">
+      <h1 class="gf_gs-text-heading-2">Subscribe to our newsletter!</h1>
+     </div>
+    </div>
+   </div>
+   <div class="gf_column gf_col-lg-6 gf_col-md-6 gf_col-xs-12 gf_col-sm-12 gf_vertical-middle" id="c-1604696931353" data-id="1604696931353" style="min-height: 78px;">
+    <div data-label="Liquid" id="m-1640785597818" class="module-wrap" data-icon="gpicon-liquid" data-ver="1.0" data-id="1640785597818" data-name="Right click on the module, then choose Edit Html / Liquid option to start writing your custom code." style="background-image: none;">
+       <div class="module gf_module- gf_module--lg gf_module--md gf_module--sm gf_module--xs ">
+        <div class="klaviyo-form-QTXiq7 klaviyo-form form-version-cid-1">
+        </div>
+       </div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+  
+<!-- 	{ % assign dm_paginate_by = paginate.page_size %}{ %- endpaginate -%} -->
+</section>
+
+<!-- {% if dm_paginate_by %}{% render 'spurit_dmr_collection_template_snippet', paginate_by: dm_paginate_by %}{% endif %} -->
+
+<style>
+.blog_inner {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    margin-top: 50px;
+    max-width: 1200px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.blog_inner .wrapper.wrapper--medium {
+    max-width: 82%;
+    margin: 0px;
+}
+.blog_inner .wrapper.wrapper--small {
+    max-width: 16%;
+    margin-right: 0px;
+    margin-left: 0px;
+    max-width: 306px;
+/*     max-width: 370px;
+    padding: 0px 0px 0px 30px; */
+}  
+.blog_inner .inline-list li {
+    margin-right: 15px;
+    margin-bottom: 10px;
+}
+.blog_inner .blog-child {
+    margin-bottom: 25px;
+}
+.cstm_all_tags {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 30px;
+    line-height: 120%;
+    color: #333333;
+}
+  .pagination .page {
+    width: 50px;
+    background: #F6F6F6;
+    padding: 5px;
+    margin: 0px 5px;
+}
+.pagination .page a {
+    font-family: 'Lato';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 150%;
+    text-transform: uppercase;
+    color: #000000;
+}
+.pagination .page.current {
+     border: 2px solid #EF8903;
+    font-family: 'Lato';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 150%;
+    text-transform: uppercase;
+    color: #000000;
+    padding: 12px;
+}  
+.pagination span.prev {
+    transform: rotate(-180deg);
+    margin-right: 10px;
+}
+.pagination span.next {
+    margin-left: 10px;
+}
+.bnr_cstm {
+    background: #F6F6F6;
+    padding: 70px 0px;
+}
+.main_heading_cstm,.cstm_bnr_icons {
+    max-width: 1200px;
+    margin: auto;
+    text-align: center;
+    padding: 0px 50px;
+}
+p.cstm_detail {
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+    font-family: 'Lato';
+    font-style: normal;
+    font-weight: 400;
+    font-size: 16px;
+    line-height: 140%;
+    text-align: center;
+    color: #333333;
+}
+.cstm_icons {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 50px;
+}
+.icon_list {
+    display: inline-block;
+}
+h1.cstm_heading.text-center {
+    display: inline-block;
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 52px;
+    line-height: 120%;
+    color: #EF8903;
+    margin-bottom: 10px;
+}
+h2.ic_text {
+    font-family: 'Playfair Display';
+    font-style: normal;
+    font-weight: 700;
+    font-size: 18px;
+    line-height: 160%;
+    text-transform: uppercase;
+    color: #EF8903;
+    padding-top: 10px;
+}  
+div#r-1640785597799 {
+    display: flex;
+    max-width: 900px;
+    margin: auto;
+  flex-wrap: wrap;
+}
+div#c-1604696873774,div#c-1604696931353 {
+    text-align: center;
+    margin: auto;
+}
+div#c-1603861285630 {
+    padding: 50px;
+    background: #f6f6f6!important;
+    margin-top: 30px;
+    justify-content: center;
+    align-items: center;
+}
+div#e-1640785597737 {
+    margin-right: 20px;
+    margin-top: 10px;
+}
+.icon_cs img {
+    width: 100%;
+    max-width: 80px;
+}
+.blog-tag span {
+    background: #ee8a00;
+    border: 1px solid #ff8f00;
+    color: white;
+}
+
+  
+@media only screen and (max-width:767px){
+  .blog_inner .wrapper {
+    padding: 0px 20px;
+}
+  .main_heading_cstm, .cstm_bnr_icons {
+    padding: 0px 20px;
+}
+.blog_inner {
+    flex-wrap: wrap;
+      margin-top: 30px;
+}
+.blog_inner .wrapper.wrapper--medium {
+    order: 2;
+    max-width: 100%;
+}
+.blog-tag-wrapper {
+    margin-bottom: 30px;
+}
+.blog_inner .wrapper.wrapper--small {
+    max-width: 100%;
+}
+.cstm_all_tags {
+    text-align: center !important;
+    margin-bottom: 30px;
+}
+.icon_list {
+    display: inline-block;
+    padding: 15px;
+}
+.cstm_icons {
+    justify-content: center;
+    margin-top: 20px;
+    flex-wrap: wrap;
+}
+.blog-tags-list {
+    text-align: center !important;
+}  
+.bnr_cstm {
+    padding: 40px 0px;
+}
+small.light-gray {
+    position: relative;
+    top: -5px;
+}
+
+h1.cstm_heading.text-center {
+    font-size: 45px;
+}  
+  
+}
+
+@media only screen and (max-width:424px){
+
+h1.gf_gs-text-heading-2 {
+    font-size: 28px;
+}
+.pagination .page {
+    width: 45px;
+    padding: 0px;
+    margin: 0px 4px;
+}
+.pagination .page.current {
+    padding: 5px;
+}
+div#c-1603861285630 {
+    padding: 20px;
+}  
+}  
+  
+
+  
+</style>
+
+{% schema %}
+	{
+		"name": "Blog",
+        "max_blocks":5,
+		"settings": [
+			{
+				"type": "range",
+				"id": "post_columns",
+				"label": "Posts per row",
+				"info": "Desktop only",
+				"min": 1,
+				"max": 4,
+				"default": 1
+			},
+			{
+				"type": "range",
+				"id": "image_aspect_ratio",
+				"label": "Image aspect ratio",
+				"min": 0.5,
+				"max": 1.5,
+				"step": 0.1,
+				"unit": ":1",
+				"default": 0.6
+			},
+			{
+				"type": "checkbox",
+				"id": "show_rss_icon",
+				"label": "Show RSS icon",
+				"default": false
+			},
+            {
+				"type": "text",
+				"id": "blog_title",
+				"label": "Blog title",
+				"default": "LifePharm Blog Categories"
+			},
+            {
+				"type": "textarea",
+				"id": "blog_detail",
+				"label": "Enter Blog Detail"
+			}
+		],
+      "blocks":[
+        {
+          "type":"icons",
+          "name":"icons",
+          "settings":[
+            {
+              "type":"text",
+              "label":"Enter Icon Text",
+              "id":"icon_txt"
+            },
+            {
+              "type":"image_picker",
+              "label":"Select Image",
+              "id":"icon_img"
+            },
+            {
+              "type":"url",
+              "label":"Enter Category Url",
+              "id":"icon_url"
+            }
+          ]
+        }
+      ]
+	}
+{% endschema %}
