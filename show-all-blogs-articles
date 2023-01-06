@@ -31,6 +31,7 @@
               {% endif %}
           </div>
           <div class="cstm_bnr_icons">
+            <h2 class="cstm_heading text-center cat_title">Categories</h2>
             <div class="cstm_icons">
               {% for link in linklists[section.settings.blog_link].links %}
               {% assign blog = link.object %}
@@ -106,7 +107,7 @@
         <div class="wrapper wrapper--small">
 			<div class="grid--full">
 				<div class="grid__item"> 
-					<h1 class="section-title text-left cstm_all_tags">All Tags</h1>
+					<h3 class="section-title text-left cstm_all_tags">All Tags</h3>
 			 	</div>
 				<div class="grid__item blog-tag-wrapper" tg="{{ blog.all_tags }}">
 					{% comment %}
@@ -125,8 +126,16 @@
 						{%- endfor -%}
 					{%- endif -%}
                   {% endfor %}
-                  
-                  {% assign tgArr = arrTags | split:"," | uniq%}
+                  {% assign tgArr = arrTags | split:"," | uniq %}
+                  {% assign manArr = "" %}
+                  {% for cstp in tgArr %}
+                      {% assign ftr = cstp | split:"/tagged/" | last  %}
+                      {% assign mktgs = "/tagged/" | append:ftr  %}
+                      {% unless manArr contains mktgs %}
+                        {% assign manArr =  manArr | append:cstp | append:"," %}
+                      {% endunless %}
+                  {% endfor %}
+                  {% assign tgArr = manArr | split:"," %}
                   {% for tg in tgArr %}
                     {% assign tgs = tg | split:"/tagged/" | last %}
                       <li class="blog-tag">
@@ -135,7 +144,6 @@
                   {% endfor %}
                 </ul>
 				</div>
-              <input type="hidden" vl="{{ arrTags }}" />
 			</div>
 		</div>
       </div>
@@ -176,7 +184,7 @@
     margin-right: auto;
 }
 .blog_inner .wrapper.wrapper--medium {
-    max-width: 82%;
+    max-width: 79%;
     margin: 0px;
 }
 .blog_inner .wrapper.wrapper--small {
@@ -238,6 +246,7 @@
 .bnr_cstm {
     background: #F6F6F6;
     padding: 55px 0px;
+    padding-bottom: 10px;
 }
 .main_heading_cstm,.cstm_bnr_icons {
     max-width: 1200px;
@@ -261,14 +270,14 @@ p.cstm_detail {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-top: 40px;
+    margin-top: 20px;
     flex-wrap:wrap;
 }
 .icon_list {
     display: inline-block;
     padding: 12px;
 }
-h1.cstm_heading.text-center {
+.cstm_heading.text-center {
     display: inline-block;
     font-family: 'Playfair Display';
     font-style: normal;
@@ -278,15 +287,20 @@ h1.cstm_heading.text-center {
     color: #EF8903;
     margin-bottom: 10px;
 }
+.cstm_heading.text-center.cat_title {
+    margin-top: 20px;
+    margin-bottom: 0;
+    font-size: 36px;
+}  
 h2.ic_text {
     font-family: 'Playfair Display';
     font-style: normal;
     font-weight: 700;
     font-size: 18px;
-    line-height: 160%;
+    line-height: 160%; 
     text-transform: uppercase;
     color: #EF8903;
-    padding-top: 10px;
+    padding-top: 5px;
 }  
 div#r-1640785597799 {
     display: flex;
@@ -318,7 +332,10 @@ div#e-1640785597737 {
     border: 1px solid #ff8f00;
     color: white;
 }
-
+li.blog-tag a {
+    border: unset;
+    text-transform: capitalize;
+}
   
 @media only screen and (max-width:767px){
   .blog_inner .wrapper {
