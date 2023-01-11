@@ -1,0 +1,202 @@
+<!-- https://vimeo.com/76979871 -->
+<script src="https://player.vimeo.com/api/player.js"></script>
+{% assign url = section.settings.video_url %}
+
+{% if section.settings.slct_opt == "vimeo" %}
+  {% if url contains 'vimeo.com'%}
+  {%assign newUrl = url | split:'vimeo.com/' | last %}
+  {%endif%}
+{%endif%}
+{% if section.settings.slct_opt == "youtube" %}
+  {% if url contains 'youtu.be'%}
+    {% assign newUrl = url | split:"youtu.be/" | last %}
+  {%elsif url contains 'youtube.com'%}
+    {% assign newUrl = url | split:"watch?v=" | last | split:"&" | first %}
+  {% endif %}
+{%endif%}
+
+  
+<div class="cstm_video_section">
+  <div class="video_grid">
+    {% if section.settings.main_text != blank %}
+      <h1 class="v_main_heading">{{ section.settings.main_text }}</h1>
+    {% endif %}
+    <div class="video_cstm {{part1}}">
+      {% if section.settings.slct_opt == "vimeo" %}
+      <div class="video_s embed-container">
+        <iframe src="https://player.vimeo.com/video/{{newUrl}}?autoplay=1&loop=1&background=1&mute=0" frameborder="0" allow="autoplay" width="100%" height="400" frameborder="0"></iframe>
+      </div>
+      {% endif %}
+      {% if section.settings.slct_opt == "youtube" %}
+      <div class="video_s embed-container">
+        <iframe width="100%" height="400" src="https://www.youtube.com/embed/{{ newUrl }}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+      </div>
+      {% endif %}
+      <div class="video_txt_grid">
+        {% if section.settings.title != blank %}
+        <div class="v_title">
+          <h2>{{section.settings.title}}</h2>
+        </div>
+        {% endif %}
+        {% if section.settings.subtitle != blank %}
+        <div class="v_sub">
+          <h3>{{section.settings.subtitle}}</h3>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<style>
+
+  .video_cstm {
+    position: relative;
+  }
+  .video_grid {
+    width: 100%;
+    max-width: 80%;
+    margin: auto;
+    padding: 20px 0px;
+}
+
+  .video_txt_grid {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    text-align: center;
+    vertical-align: middle;
+    justify-content: center;
+    transform: translate(-50%, -50%);
+    padding: 3%;
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .cstm_video_section {
+    margin: 2% 0px;
+  }
+
+  .v_title h2 {
+    font-size: 30px;
+    color: #ffffff;
+}
+  
+  .v_sub h3 {
+    margin-bottom: 0px;
+    font-size: 70px;
+    color: #ffffff;
+  }
+  
+  h1.v_main_heading {
+    text-align: center;
+    font-weight: 600;
+    font-size: 42px;
+    padding-bottom: 20px;
+    margin-top: 10px;
+}
+  
+  @media screen and (max-width: 749px) {
+    .v_title h2 {
+    font-size: 10px;
+    color: #ffffff;
+}
+ .video_grid {
+    width: 100%;
+    max-width: 90%;
+    margin: auto;
+    padding: 20px 0px;
+}   
+  
+  .v_sub h3 {
+    margin-bottom: 0px;
+    font-size: 30px;
+    color: #ffffff;
+  }
+    }
+
+  .embed-container {
+    position: relative;
+    padding-bottom: 60%;
+    width:100%;
+    height: 0;
+    overflow: hidden;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .embed-container iframe,
+  .embed-container object,
+  .embed-container embed {
+    position: absolute;
+    top: 0%;
+    width: 100%;
+    height: 100%;
+  }
+
+</style>
+
+
+
+{% schema %}
+{
+"name": "Vimeo video with text box",
+"class": "index-section--flush",
+"settings": [
+{
+"type": "select",
+"id": "slct_opt",
+"label": "select video type",
+"default": "youtube",
+  "options":[
+    {
+      "value": "youtube",
+      "label": "Youtube"
+    },
+    {
+      "value": "vimeo",
+      "label": "Vimeo"
+    }
+  ]
+},
+{
+"type": "text",
+"id": "main_text",
+"label": "Main Heading"
+},  
+{
+"type": "textarea",
+"id": "subtitle",
+"label": "Subheading",
+"default": "Impressive"
+},
+{
+"type": "text",
+"id": "title",
+"label": "Heading",
+"default": "video with text box"
+},
+
+{
+"type": "text",
+"id": "video_url",
+"label": "Background video link",
+"default": "https://youtu.be/nqye02H_H6I",
+"info": "vimeo & youtube formats should be => https://vimeo.com/76979871 => https://youtu.be/nqye02H_H6I"
+}
+],
+"presets": [
+{
+"name": "Custom video",
+"category": "Video"
+}
+]
+}
+{% endschema %}
+
+{% stylesheet %}
+{% endstylesheet %}
+
+{% javascript %}
+{% endjavascript %}
