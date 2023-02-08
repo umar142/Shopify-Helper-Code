@@ -1,0 +1,47 @@
+<div class="cstm_nxt_pre">
+  {% assign prevProd = "" %}
+    {% assign nextProd = "" %}
+    {% assign chkHndl = "no" %}
+    {% assign frstPro = collections.all.products[0] %}
+    {% for prod in collections.all.products %}
+      {% if chkHndl == "no" %}
+        {% assign prevProd = prod %}
+      {% endif %}
+      {% if chkHndl == "yes" %}
+        {% assign nextProd = prod %}
+        {% break %}
+      {% endif %}
+      {% if product.handle == prod.handle %}
+        {% assign chkHndl = "yes" %}
+      {% endif %}
+    {% endfor %}
+  <div class="cstm_innr_np">
+    <div class="np_main">
+      {% if frstPro.id != prevProd.id %}
+        <a fid="{{ frstPro.id }}" id="{{ prevProd.id }}" titl="{{ prevProd.title }}" href="/products/{{ prevProd.handle }}" class="prev_cstm">Prev Product</a>
+      {% endif %}
+      {% if nextProd.handle != blank %}
+        <a id="{{ nextProd.id }}" titl="{{ nextProd.title }}" href="/products/{{nextProd.handle  }}" class="next_cstm">Next Product</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+<style>
+  .product__info-wrapper.grid__item {
+    position: relative;
+}
+.cstm_nxt_pre {
+    position: absolute;
+    top: 60px;
+    width: 100%;
+}
+.np_main {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    align-items: center;
+    width: 100%;
+    padding: 10px 0px;
+    padding-bottom: 30px;
+}  
+</style>
