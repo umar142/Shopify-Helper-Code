@@ -1,0 +1,731 @@
+{{ 'component-cart.css' | asset_url | stylesheet_tag }}
+{{ 'component-cart-items.css' | asset_url | stylesheet_tag }}
+{{ 'component-totals.css' | asset_url | stylesheet_tag }}
+{{ 'component-price.css' | asset_url | stylesheet_tag }}
+{{ 'component-discounts.css' | asset_url | stylesheet_tag }}
+{{ 'component-loading-overlay.css' | asset_url | stylesheet_tag }}
+{{ 'section-main-product.css' | asset_url | stylesheet_tag }}
+<style>
+  .product-form__input.cstm_swat_clr input[type=radio]:disabled+label:after {
+      content: 'x';
+      font-size: 72px;
+      position: absolute;
+      top: -24px;
+      left: 1px;
+      color: black;
+      font-weight: 300;
+      /* opacity: 1; */
+  }
+</style>
+<style>
+  .size_1 .cstm_img_nw {
+      display: block !important;
+  }
+  .cstm_img_nw {
+      display: none;
+  }
+  .cstm_img_nw[altvid="{{ product.selected_or_first_available_variant.id }}"]{
+      display:block;
+  }
+</style>
+
+{%- style -%}
+  .section-{{ section.id }}-padding {
+    padding-top: {{ section.settings.padding_top | times: 0.75 | round: 0 }}px;
+    padding-bottom: {{ section.settings.padding_bottom | times: 0.75 | round: 0 }}px;
+  }
+
+  @media screen and (min-width: 750px) {
+    .section-{{ section.id }}-padding {
+      padding-top: {{ section.settings.padding_top }}px;
+      padding-bottom: {{ section.settings.padding_bottom }}px;
+    }
+  }
+{%- endstyle -%}
+<script src="{{ 'product-form.js' | asset_url }}" defer="defer"></script>
+<cart-items class="page-width{% if cart == empty %} is-empty{% else %} section-{{ section.id }}-padding{% endif %}">
+  <div class="title-wrapper-with-link">
+    <h1 class="title title--primary">{{ 'sections.cart.title' | t }}</h1>
+    <a href="{{ routes.all_products_collection_url }}" class="underlined-link">{{ 'general.continue_shopping' | t }}</a>
+  </div>
+
+  <div class="cart__warnings">
+    <h1 class="cart__empty-text">{{ 'sections.cart.empty' | t }}</h1>
+    <a href="{{ routes.all_products_collection_url }}" class="button">
+      {{ 'general.continue_shopping' | t }}
+    </a>
+
+    {%- if shop.customer_accounts_enabled and customer == null -%}
+      <h2 class="cart__login-title">{{ 'sections.cart.login.title' | t }}</h2>
+      <p class="cart__login-paragraph">
+        {{ 'sections.cart.login.paragraph_html' | t: link: routes.account_login_url }}
+      </p>
+    {%- endif -%}
+  </div>
+
+  <form action="{{ routes.cart_url }}" class="cart__contents critical-hidden" method="post" id="cart">
+    <div class="cart__items" id="main-cart-items" data-id="{{ section.id }}">
+      <div class="js-contents">
+        {%- if cart != empty -%}
+          <table class="cart-items">
+            <caption class="visually-hidden">
+              {{ 'sections.cart.title' | t }}
+            </caption>
+            <thead>
+              <tr>
+                <th class="caption-with-letter-spacing" colspan="2" scope="col">
+                  {{ 'sections.cart.headings.product' | t }}
+                </th>
+                <th class="medium-hide large-up-hide right caption-with-letter-spacing" colspan="1" scope="col">
+                  {{ 'sections.cart.headings.total' | t }}
+                </th>
+                <th class="cart-items__heading--wide small-hide caption-with-letter-spacing" colspan="1" scope="col">
+                  {{ 'sections.cart.headings.quantity' | t }}
+                </th>
+                <th class="small-hide right caption-with-letter-spacing" colspan="1" scope="col">
+                  {{ 'sections.cart.headings.total' | t }}
+                </th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {%- for item in cart.items -%}
+                <tr class="cart-item" id="CartItem-{{ item.index | plus: 1 }}">
+                  <td class="cart-item__media">
+                    {% if item.image %}
+                      {% comment %} Leave empty space due to a:empty CSS display: none rule {% endcomment %}
+                      <a href="{{ item.url }}" class="cart-item__link" aria-hidden="true" tabindex="-1"> </a>
+                      <div class="cart-item__image-container gradient global-media-settings">
+                        <img
+                          src="{{ item.image | image_url: width: 300 }}"
+                          class="cart-item__image"
+                          alt="{{ item.image.alt | escape }}"
+                          loading="lazy"
+                          width="150"
+                          height="{{ 150 | divided_by: item.image.aspect_ratio | ceil }}"
+                        >
+                      </div>
+                    {% endif %}
+                  </td>
+
+                  <td class="cart-item__details">
+                    {%- if settings.show_vendor -%}
+                      <p class="caption-with-letter-spacing">{{ item.product.vendor }}</p>
+                    {%- endif -%}
+
+                    <a href="{{ item.url }}" class="cart-item__name h4 break" vid="{{ item.variant_id }}">{{ item.product.title | escape }}</a>
+
+                    {%- if item.original_price != item.final_price -%}
+                      <div class="cart-item__discounted-prices">
+                        <span class="visually-hidden">
+                          {{ 'products.product.price.regular_price' | t }}
+                        </span>
+                        <s class="cart-item__old-price product-option">
+                          {{- item.original_price | money -}}
+                        </s>
+                        <span class="visually-hidden">
+                          {{ 'products.product.price.sale_price' | t }}
+                        </span>
+                        <strong class="cart-item__final-price product-option">
+                          {{ item.final_price | money }}
+                        </strong>
+                      </div>
+                    {%- else -%}
+                      <div class="product-option">
+                        {{ item.original_price | money }}
+                      </div>
+                    {%- endif -%}
+
+                    {%- if item.product.has_only_default_variant == false
+                      or item.properties.size != 0
+                      or item.selling_plan_allocation != null
+                    -%}
+                      <dl>
+                        {%- if item.product.has_only_default_variant == false -%}
+                          {%- for option in item.options_with_values -%}
+                            <div class="product-option">
+                              <dt>{{ option.name }}:</dt>
+                              <dd>{{ option.value }}</dd>
+                            </div>
+                          {%- endfor -%}
+                        {%- endif -%}
+                        {% assign product = item.product %}
+                      
+              {%- unless product.has_only_default_variant -%}
+
+
+                <div class="vrnts_p {{item.product.title}} " style="display:none;">
+                {% for variant in product.variants %}
+                  <input class="varCstm" type="hidden" vId="{{ variant.id }}" vName='{{ variant.title }}' >
+                {% endfor %}  
+                </div>
+{% assign indx = forloop.index0 %}
+               
+                    {%- for option in product.options_with_values -%}
+                     {% assign opName = option.name | downcase %}
+                      <fieldset class="product-form__input indx{{forloop.index}} {% if opName == "length" %} custom_lsw {% endif %} {% if opName == "color" %}cstm_swat_clr{% endif %}">
+                        <legend class="form__label">{{ option.name }}{% if opName == "color" %}  <span class="selec_vrnt">{%- for value in option.values -%}{% if option.selected_value == value %}{% endif %}{% endfor %} </span>{% endif %}</legend>
+                        {%- for value in option.values -%}
+                          <input
+                            type="radio"
+                            id="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}--{{ indx }}"
+                            class='inptOpt {{ option.selected_value }}--{{ value }}'
+                            name="{{ option.name }}--{{ indx }}"
+                            value="{{ value | escape }}"
+                          {%- for option in item.options_with_values -%}
+                            {% if option.value == value %}
+                              checked
+                            {% endif %}
+                          {%- endfor -%}
+                            
+                          >
+
+                          {%- capture optiCstm -%}{% for variant in product.variants %}{% if variant.options contains value %}{%- for op in variant.options -%}{{ op | append:"," | strip}}{%- endfor -%}{% endif %}{% endfor %}{% endcapture %}
+                            
+                          <label class="cstm_lbl_sw" opt_cstm='{{- optiCstm -}}' title='{{ value }}'  opName='{{ opName }}' for="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}--{{ indx }}" {% if opName == "color" %}style="padding: 18px; background-color: {{value | replace:' ','-'  }}; background-image:url('{{ value | replace:' ','-' | downcase | append:".jpg" | file_img_url:"master" }}');background-size: cover;"{% endif %}>
+                            {% unless opName == "color" %}{{ value }}{% endunless %}
+                          </label>
+                        {%- endfor -%}
+                      </fieldset>
+                    {%- endfor -%}
+<style>
+  .product-form__input.cstm_swat_clr input[type=radio]:checked+label{
+    background: unset;
+  }
+.product-form__input input[type=radio]:checked+label:before {
+    border: 2px solid black;
+    content: "";
+    padding: 20px;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+}
+.product-form__input.cstm_swat_clr input[type=radio]:disabled+label:after {
+    content: 'x';
+    font-size: 72px;
+    position: absolute;
+    top: -24px;
+    left: 1px;
+    color: black;
+    font-weight: 300;
+    /* opacity: 1; */
+}
+.product-form__input input[type=radio]:checked+label:before {
+    border: 2px solid black;
+    content: "";
+    padding: 20px;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+}
+button#checkout, .update_variant {
+    color: black;
+    background: white;
+    border: 2px solid;
+    height: 50px;
+    cursor: pointer;
+}
+.cart__ctas {
+    align-items: baseline;
+}                
+</style>
+<script>
+
+$(document).ready(function(){
+  $(".cstm_lbl_sw").click(function(){
+      var $this = $(this);
+      setTimeout(function(){          
+        var v1 = $this.closest(".cart-item__details").find("fieldset.product-form__input.indx1").find(".inptOpt:checked").val();
+        $this.closest(".cart-item__details").find("fieldset.product-form__input").each(function(){
+            if(!$(this).hasClass("indx1")){
+                $(this).find(".cstm_lbl_sw").each(function(){
+                    if($(this).attr("opt_cstm").indexOf(v1) > -1){
+                        $(this).show();
+                    }else{
+                        $(this).hide();
+                    }
+                })
+            }
+        });
+      },500);
+  });
+
+$("button.update_variant").click(function(event){
+  event.preventDefault();
+    updateCart();
+})
+                
+});                
+
+function checkVariantOptionsCstm(){
+  $(".cart-item").each(function(){
+    var chk = 1;var v1 = $(this).find("fieldset.product-form__input.indx1").find(".inptOpt:checked").val();
+      $(this).find("fieldset.product-form__input").find(".cstm_lbl_sw").each(function(){
+        if(!$(this).parent().hasClass("indx1")){
+          if($(this).attr("opt_cstm").indexOf(v1) > -1){
+              $(this).show();
+          }else{
+              $(this).hide();
+          }
+        }
+      })
+  });
+}
+checkVariantOptionsCstm();
+
+function updateCart(){
+
+
+jQuery.post('/cart/clear.js');  
+
+setTimeout(function(){
+var cartData = [];
+$(".cart-item").each(function(){
+    var vId = $(this).find(".cart-item__name").attr("vid");
+    var qnty = $(this).find(".quantity__input").val();
+    var opts = [];
+    if($(this).find(".product-form__input").length>0){
+        $(this).find(".product-form__input").each(function(){
+            opts.push($.trim($(this).find(".inptOpt:checked").val()));
+        });
+       
+        $(this).find("input.varCstm").each(function(){
+            var vnm = $.trim($(this).attr("vname")).split("/");
+            vnm = vnm.map(function (el) {
+              return el.trim();
+            });
+            var chkOs = false;
+            const containsAll = opts.every(element => {
+              return vnm.indexOf(element) !== -1;
+            });
+            chkOs = containsAll;
+            if(chkOs){
+                vId = $(this).attr("vid");
+            }
+        })
+    }
+  
+    cartData.push({"id":vId,"quantity":qnty});
+    console.log("cartData ",cartData);
+});
+
+
+let formData = {
+ 'items': cartData
+};
+fetch(window.Shopify.routes.root + 'cart/add.js', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify(formData)
+}).then(response => {
+   console.log(response.json());
+    window.location.reload();
+}).catch((error) => {
+  console.error('Error:', error);
+});
+  
+},800)
+
+                
+}
+                
+</script>
+
+             
+               
+         
+              {%- endunless -%}
+                        
+                        {% comment %}
+                          {%- unless product.has_only_default_variant -%}
+                            {%- for option in product.options_with_values -%}
+                              <fieldset
+                                id="ProductSelect-option-{{ forloop.index0 }}"
+                                name="{{ option.name | handleize }}"
+                              >
+                                <legend>
+                                  {{ option.name | escape }}
+                                </legend>
+                                {%- for value in option.values -%}
+                                  <!--
+                                    Check to see if there's a product size option. If there is a size, check to see if there's any availble for purchase. If not, set the variat control in a "disabled" state.
+                                  -->
+                                  {%- assign variant_label_state = true -%}
+
+                                  {%- if product.options.size == 1 -%}
+                                    {%- unless product.variants[forloop.index0].available -%}
+                                      {%- assign variant_label_state = false -%}
+                                    {%- endunless -%}
+                                  {%- endif -%}
+
+                                  <input
+                                    type="radio"
+                                    {% if option.selected_value == value %}
+                                      checked="checked"
+                                    {% endif %}
+                                    {% unless variant_label_state %}
+                                      disabled="disabled"
+                                    {% endunless %}
+                                    value="{{ value | escape }}"
+                                    data-index="option{{ forloop.index }}"
+                                    name="{{ option.name | handleize }}"
+                                    id="ProductSelect-option-{{ option.name | handleize }}-{{ value | escape }}"
+                                  >
+                                  <label for="ProductSelect-option-{{ option.name | handleize }}-{{ value | escape }}">
+                                    {{ value | escape }}
+                                  </label>
+                                {%- endfor -%}
+                              </fieldset>
+
+                              <label for="ProductSelect-option-{{ forloop.index0 }}">
+                                {{ option.name | escape }}
+                              </label>
+                              <select id="ProductSelect-{{ forloop.index0 }}" data-index="option{{ forloop.index }}">
+                                {%- for value in option.values -%}
+                                  <option
+                                    value="{{ value | escape }}"
+                                    {% if option.selected_value == value %}
+                                      selected="selected"
+                                    {% endif %}
+                                  >
+                                    {{ value | escape }}
+                                  </option>
+                                {%- endfor -%}
+                              </select>
+                            {%- endfor -%}
+                          {%- endunless -%}
+                        {% endcomment %}
+
+                        {%- for property in item.properties -%}
+                          {%- assign property_first_char = property.first | slice: 0 -%}
+                          {%- if property.last != blank and property_first_char != '_' -%}
+                            <div class="product-option">
+                              <dt>{{ property.first }}:</dt>
+                              <dd>
+                                {%- if property.last contains '/uploads/' -%}
+                                  <a href="{{ property.last }}" class="link" target="_blank">
+                                    {{ property.last | split: '/' | last }}
+                                  </a>
+                                {%- else -%}
+                                  {{ property.last }}
+                                {%- endif -%}
+                              </dd>
+                            </div>
+                          {%- endif -%}
+                        {%- endfor -%}
+                      </dl>
+
+                      <p class="product-option">{{ item.selling_plan_allocation.selling_plan.name }}</p>
+                    {%- endif -%}
+
+                    <ul class="discounts list-unstyled" role="list" aria-label="{{ 'customer.order.discount' | t }}">
+                      {%- for discount in item.discounts -%}
+                        <li class="discounts__discount">
+                          {%- render 'icon-discount' -%}
+                          {{ discount.title }}
+                        </li>
+                      {%- endfor -%}
+                    </ul>
+                  </td>
+
+                  <td class="cart-item__totals right medium-hide large-up-hide">
+                    <div class="loading-overlay hidden">
+                      <div class="loading-overlay__spinner">
+                        <svg
+                          aria-hidden="true"
+                          focusable="false"
+                          role="presentation"
+                          class="spinner"
+                          viewBox="0 0 66 66"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <circle class="path" fill="none" stroke-width="6" cx="33" cy="33" r="30"></circle>
+                        </svg>
+                      </div>
+                    </div>
+                    <div class="cart-item__price-wrapper">
+                      {%- if item.original_line_price != item.final_line_price -%}
+                        <dl class="cart-item__discounted-prices">
+                          <dt class="visually-hidden">
+                            {{ 'products.product.price.regular_price' | t }}
+                          </dt>
+                          <dd>
+                            <s class="cart-item__old-price price price--end">
+                              {{ item.original_line_price | money }}
+                            </s>
+                          </dd>
+                          <dt class="visually-hidden">
+                            {{ 'products.product.price.sale_price' | t }}
+                          </dt>
+                          <dd class="price price--end">
+                            {{ item.final_line_price | money }}
+                          </dd>
+                        </dl>
+                      {%- else -%}
+                        <span class="price price--end">
+                          {{ item.original_line_price | money }}
+                        </span>
+                      {%- endif -%}
+
+                      {%- if item.variant.available and item.unit_price_measurement -%}
+                        <div class="unit-price caption">
+                          <span class="visually-hidden">{{ 'products.product.price.unit_price' | t }}</span>
+                          {{ item.variant.unit_price | money }}
+                          <span aria-hidden="true">/</span>
+                          <span class="visually-hidden"
+                            >&nbsp;{{ 'accessibility.unit_price_separator' | t }}&nbsp;</span
+                          >
+                          {%- if item.variant.unit_price_measurement.reference_value != 1 -%}
+                            {{- item.variant.unit_price_measurement.reference_value -}}
+                          {%- endif -%}
+                          {{ item.variant.unit_price_measurement.reference_unit }}
+                        </div>
+                      {%- endif -%}
+                    </div>
+                  </td>
+
+                  <td class="cart-item__quantity">
+                    <div class="cart-item__quantity-wrapper">
+                      <label class="visually-hidden" for="Quantity-{{ item.index | plus: 1 }}">
+                        {{ 'products.product.quantity.label' | t }}
+                      </label>
+                      <quantity-input class="quantity">
+                        <button class="quantity__button no-js-hidden" name="minus" type="button">
+                          <span class="visually-hidden">
+                            {{- 'products.product.quantity.decrease' | t: product: item.product.title | escape -}}
+                          </span>
+                          {% render 'icon-minus' %}
+                        </button>
+                        <input
+                          class="quantity__input"
+                          type="number"
+                          name="updates[]"
+                          value="{{ item.quantity }}"
+                          min="0"
+                          aria-label="{{ 'products.product.quantity.input_label' | t: product: item.product.title | escape }}"
+                          id="Quantity-{{ item.index | plus: 1 }}"
+                          data-index="{{ item.index | plus: 1 }}"
+                        >
+                        <button class="quantity__button no-js-hidden" name="plus" type="button">
+                          <span class="visually-hidden">
+                            {{- 'products.product.quantity.increase' | t: product: item.product.title | escape -}}
+                          </span>
+                          {% render 'icon-plus' %}
+                        </button>
+                      </quantity-input>
+
+                      <cart-remove-button
+                        id="Remove-{{ item.index | plus: 1 }}"
+                        data-index="{{ item.index | plus: 1 }}"
+                      >
+                        <a
+                          href="{{ item.url_to_remove }}"
+                          class="button button--tertiary"
+                          aria-label="{{ 'sections.cart.remove_title' | t: title: item.title }}"
+                        >
+                          {% render 'icon-remove' %}
+                        </a>
+                      </cart-remove-button>
+                    </div>
+                    <div class="cart-item__error" id="Line-item-error-{{ item.index | plus: 1 }}" role="alert">
+                      <small class="cart-item__error-text"></small>
+                      <svg
+                        aria-hidden="true"
+                        focusable="false"
+                        role="presentation"
+                        class="icon icon-error"
+                        viewBox="0 0 13 13"
+                      >
+                        <circle cx="6.5" cy="6.50049" r="5.5" stroke="white" stroke-width="2"/>
+                        <circle cx="6.5" cy="6.5" r="5.5" fill="#EB001B" stroke="#EB001B" stroke-width="0.7"/>
+                        <path d="M5.87413 3.52832L5.97439 7.57216H7.02713L7.12739 3.52832H5.87413ZM6.50076 9.66091C6.88091 9.66091 7.18169 9.37267 7.18169 9.00504C7.18169 8.63742 6.88091 8.34917 6.50076 8.34917C6.12061 8.34917 5.81982 8.63742 5.81982 9.00504C5.81982 9.37267 6.12061 9.66091 6.50076 9.66091Z" fill="white"/>
+                        <path d="M5.87413 3.17832H5.51535L5.52424 3.537L5.6245 7.58083L5.63296 7.92216H5.97439H7.02713H7.36856L7.37702 7.58083L7.47728 3.537L7.48617 3.17832H7.12739H5.87413ZM6.50076 10.0109C7.06121 10.0109 7.5317 9.57872 7.5317 9.00504C7.5317 8.43137 7.06121 7.99918 6.50076 7.99918C5.94031 7.99918 5.46982 8.43137 5.46982 9.00504C5.46982 9.57872 5.94031 10.0109 6.50076 10.0109Z" fill="white" stroke="#EB001B" stroke-width="0.7">
+                      </svg>
+                    </div>
+                  </td>
+
+                  <td class="cart-item__totals right small-hide">
+                    <div class="loading-overlay hidden">
+                      <div class="loading-overlay__spinner">
+                        <svg
+                          aria-hidden="true"
+                          focusable="false"
+                          role="presentation"
+                          class="spinner"
+                          viewBox="0 0 66 66"
+                          xmlns="http://www.w3.org/2000/svg"
+                        >
+                          <circle class="path" fill="none" stroke-width="6" cx="33" cy="33" r="30"></circle>
+                        </svg>
+                      </div>
+                    </div>
+
+                    <div class="cart-item__price-wrapper">
+                      {%- if item.original_line_price != item.final_line_price -%}
+                        <dl class="cart-item__discounted-prices">
+                          <dt class="visually-hidden">
+                            {{ 'products.product.price.regular_price' | t }}
+                          </dt>
+                          <dd>
+                            <s class="cart-item__old-price price price--end">
+                              {{ item.original_line_price | money }}
+                            </s>
+                          </dd>
+                          <dt class="visually-hidden">
+                            {{ 'products.product.price.sale_price' | t }}
+                          </dt>
+                          <dd class="price price--end">
+                            {{ item.final_line_price | money }}
+                          </dd>
+                        </dl>
+                      {%- else -%}
+                        <span class="price price--end">
+                          {{ item.original_line_price | money }}
+                        </span>
+                      {%- endif -%}
+
+                      {%- if item.variant.available and item.unit_price_measurement -%}
+                        <div class="unit-price caption">
+                          <span class="visually-hidden">{{ 'products.product.price.unit_price' | t }}</span>
+                          {{ item.variant.unit_price | money }}
+                          <span aria-hidden="true">/</span>
+                          <span class="visually-hidden"
+                            >&nbsp;{{ 'accessibility.unit_price_separator' | t }}&nbsp;</span
+                          >
+                          {%- if item.variant.unit_price_measurement.reference_value != 1 -%}
+                            {{- item.variant.unit_price_measurement.reference_value -}}
+                          {%- endif -%}
+                          {{ item.variant.unit_price_measurement.reference_unit }}
+                        </div>
+                      {%- endif -%}
+                    </div>
+                  </td>
+                </tr>
+              {%- endfor -%}
+            </tbody>
+          </table>
+        {%- endif -%}
+      </div>
+    </div>
+
+    <p class="visually-hidden" id="cart-live-region-text" aria-live="polite" role="status"></p>
+    <p class="visually-hidden" id="shopping-cart-line-item-status" aria-live="polite" aria-hidden="true" role="status">
+      {{ 'accessibility.loading' | t }}
+    </p>
+  </form>
+</cart-items>
+{% comment %}
+  <script>
+
+
+
+
+
+
+      const pickerType = (document.querySelector('variant-radios')) ? 'radios' : 'selects';
+  const variantSelects = (pickerType == 'radios') ? document.querySelector('variant-radios') : document.querySelector('variant-selects');
+  const fieldsets = (pickerType == 'radios') ? Array.from(variantSelects.querySelectorAll('fieldset')) : Array.from(variantSelects.querySelectorAll('.product-form__input--dropdown'));
+
+  let selectedOptions = [];
+
+  variantSelects.addEventListener('change', rebuildOptions);
+  this.rebuildOptions();
+
+  // gather a list of valid combinations of options, check to see if the input passed to it matches in a chain of valid options.
+  function validCombo(inputValue, optionLevel) {
+    for(let i = 0; i < productJson.length; i++) {
+      if(optionLevel == 1){
+        if (productJson[i].option1 == selectedOptions[0] && productJson[i].option2 == inputValue) { return true; }
+      } else {
+        if (productJson[i].option1 == selectedOptions[0] && productJson[i].option2 == selectedOptions[1] && productJson[i].option3 == inputValue) { return true; }
+      }
+    }
+    return false;
+  }
+
+  function rebuildOptions() {
+    selectedOptions = fieldsets.map((fieldset) => {
+      return (pickerType == 'radios') ? Array.from(fieldset.querySelectorAll('input')).find((radio) => radio.checked).value : Array.from(fieldset.querySelectorAll('select'), (select) => select.value);
+    });
+    //loop through the option sets starting from the 2nd set and disable any invalid options
+    for(let optionLevel = 1, n = fieldsets.length; optionLevel < n; optionLevel++) {
+      const inputs = (pickerType == 'radios') ? fieldsets[optionLevel].querySelectorAll('input') : fieldsets[optionLevel].querySelectorAll('option');
+
+      inputs.forEach(input => {
+        input.disabled = (validCombo(input.value,optionLevel)) ? false : true;
+        if(pickerType == 'radios'){
+          //get the label for the current input (this is what the user clicks, the "pill")
+          const label = fieldsets[optionLevel].querySelector(`label[for="${input.id}"]`);
+
+          //label.style.display = (input.disabled) ? "none" : ""; //Hide the option, or comment this line out and use the following lines to style it..
+  label.style.cursor = (input.disabled) ? "no-drop" : "";
+  label.style.borderColor = (input.disabled) ? "red" : "";
+  label.style.borderWidth = (input.disabled) ? "4" : "3";
+          label.style.opacity = (input.disabled) ? 0.4 : 1;
+
+          //label.style.textDecoration = (input.disabled) ? "none" : "";
+        } else {
+          input.hidden = (validCombo(input.value,optionLevel)) ? false : true;
+        }
+      });
+    }
+
+    //if the default selected option is disabled with the function above, select the first available option instead
+    for (let optionLevel = 1, fieldsetsLength = fieldsets.length, change = false; optionLevel < fieldsetsLength && !change; optionLevel++) {
+      if(pickerType == 'radios'){
+        if(fieldsets[optionLevel].querySelector('input:checked').disabled === true) {
+          change = (fieldsets[optionLevel].querySelector('input:not(:disabled)').checked = true);
+        }
+      } else {
+        if(fieldsets[optionLevel].querySelector('option:checked').disabled === true) {
+          change = (fieldsets[optionLevel].querySelector('option:not(:disabled)').selected = "selected");
+        }
+      }
+      //if a new option has been selected, restart the whole process
+      if(change) variantSelects.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  }
+
+
+
+
+
+
+  </script>
+{% endcomment %}
+
+{% schema %}
+{
+  "name": "t:sections.main-cart-items.name",
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:sections.all.padding.section_padding_heading"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_top",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "t:sections.all.padding.padding_bottom",
+      "default": 36
+    }
+  ]
+}
+{% endschema %}
